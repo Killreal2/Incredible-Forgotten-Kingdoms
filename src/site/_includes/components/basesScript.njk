@@ -102,3 +102,33 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 });
 </script>
+
+<!-- Подключаем саму библиотеку зума -->
+<script src="https://jsdelivr.net"></script>
+
+<!-- Скрипт, который автоматически оживит все теги <object> со схемами Excalidraw -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Находим все объекты, которые загружают SVG схемы
+    const svgObjects = document.querySelectorAll('object[type="image/svg+xml"]');
+
+    svgObjects.forEach((obj) => {
+      // Ждем, пока сам файл SVG внутри объекта полностью загрузится
+      obj.addEventListener('load', function() {
+        try {
+          svgPanZoom(obj, {
+            zoomEnabled: true,
+            controlIconsEnabled: true,   // Появится мини-интерфейс управления (+ / - / 🎯)
+            mouseWheelZoomEnabled: true, // Зум колесиком мыши
+            panEnabled: true,            // Перетаскивание мышкой
+            fit: true,                   // Вписать в рамку
+            center: true                 // Центрировать
+          });
+        } catch (e) {
+          console.error("Не удалось инициализировать зум для SVG:", e);
+        }
+      });
+    });
+  });
+</script>
+
