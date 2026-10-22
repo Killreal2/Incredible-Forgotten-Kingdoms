@@ -105,28 +105,45 @@ document.addEventListener("DOMContentLoaded", function() {
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // Ждем полной загрузки страницы
     window.addEventListener('load', function() {
-      // Находим на странице абсолютно все SVG от Excalidraw
+      // Находим все SVG схемы от Excalidraw на странице
       const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
 
       images.forEach(img => {
-        // Задаем начальный курсор и плавность
+        // Базовые стили для плавности и курсора
         img.style.cursor = 'zoom-in';
-        img.style.transition = 'transform 0.2s ease, max-width 0.2s ease';
+        img.style.transition = 'width 0.2s ease-in-out, max-width 0.2s ease-in-out';
+        
+        // Обернем картинку в специальный контейнер для безопасного скролла, 
+        // если темы Digital Garden сильно сжимают родительские теги
+        const wrapper = document.createElement('div');
+        wrapper.className = 'excalidraw-scroll-wrapper';
+        wrapper.style.width = '100%';
+        wrapper.style.overflow = 'auto';
+        
+        img.parentNode.insertBefore(wrapper, img);
+        wrapper.appendChild(img);
 
-        img.addEventListener('click', function() {
-          if (this.style.transform === 'scale(2)') {
-            // Возвращаем в исходный вид
-            this.style.transform = 'scale(1)';
+        img.addEventListener('click', function(e) {
+          e.stopPropagation(); // Предотвращаем конфликты с другими скриптами темы
+
+          // Если картинка уже увеличена (ширина больше 100%)
+          if (this.style.width === '250%') {
+            // Возвращаем в стандартный адаптивный вид под ширину текста
+            this.style.width = '100%';
+            this.style.maxWidth = '100%';
             this.style.cursor = 'zoom-in';
-            this.parentNode.style.overflow = 'visible';
           } else {
-            // Увеличиваем в 2 раза
-            this.style.transform = 'scale(2)';
+            // Физически увеличиваем картинку до 250% от ширины контента
+            this.style.width = '250%';
+            this.style.maxWidth = 'none'; // Снимаем ограничения темы сайта
             this.style.cursor = 'zoom-out';
-            // Разрешаем контейнеру прокрутку, если картинка вылезает за экран
-            this.parentNode.style.overflow = 'auto';
+            
+            // Центрируем скролл на месте клика, чтобы пользователь не "терялся" в левом углу
+            setTimeout(() => {
+              const rect = this.getBoundingClientRect();
+              wrapper.scrollLeft = (rect.width / 2) - (wrapper.clientWidth / 2);
+            }, 210);
           }
         });
       });
