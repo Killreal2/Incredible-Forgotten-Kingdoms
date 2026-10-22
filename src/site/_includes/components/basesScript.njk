@@ -112,7 +112,6 @@ document.addEventListener("DOMContentLoaded", function() {
       images.forEach(img => {
         img.style.cursor = 'zoom-in';
         img.style.transition = 'transform 0.1s ease-out';
-        // ВАЖНО: меняем точку отсчета на левый верхний угол для точного расчета координат
         img.style.transformOrigin = '0 0'; 
         
         const viewContainer = document.createElement('div');
@@ -128,21 +127,33 @@ document.addEventListener("DOMContentLoaded", function() {
         viewContainer.appendChild(img);
         viewContainer.appendChild(resetBtn);
 
-        // Переменные состояния
+        // Переменные состояния (будут рассчитаны после загрузки картинки)
         let scale = 1;
         let isDragging = false;
         let startX, startY;
-        
-        // Изначально выравниваем картинку по центру контейнера вручную
-        let translateX = (viewContainer.clientWidth - img.clientWidth) / 2;
-        let translateY = (viewContainer.clientHeight - img.clientHeight) / 2;
-        
-        // Запоминаем дефолтные центрированные координаты для сброса
-        const defaultX = translateX;
-        const defaultY = translateY;
+        let translateX = 0;
+        let translateY = 0;
+        let defaultX = 0;
+        let defaultY = 0;
+        let hasMoved = false;
 
-        // Применяем стартовое позиционирование без анимации
-        img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ: Идеальное центрирование строго после полной загрузки SVG ---
+        function initCenter() {
+          translateX = (viewContainer.clientWidth - img.clientWidth) / 2;
+          translateY = (viewContainer.clientHeight - img.clientHeight) / 2;
+          defaultX = translateX;
+          defaultY = translateY;
+          img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+
+        // Если картинка уже была в кэше браузера к этому моменту
+        if (img.complete) {
+          initCenter();
+        } else {
+          // Если картинка еще скачивается — ждем её полной готовности
+          img.addEventListener('load', initCenter);
+        }
+        // ---------------------------------------------------------------------------------
 
         function applyTransform(animate = true) {
           img.style.transition = animate ? 'transform 0.15s ease-out' : 'none';
@@ -155,22 +166,18 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         }
 
-        // --- ОБНОВЛЕННЫЙ УМНЫЙ ЗУМ В ТОЧКУ КУРСОРА ---
+        // Управление масштабом (колесико мыши)
         viewContainer.addEventListener('wheel', function (e) {
-          e.preventDefault(); // Блокируем скролл страницы сайта
+          e.preventDefault(); 
 
           const rect = viewContainer.getBoundingClientRect();
-          // Получаем точные координаты мыши ОТНОСИТЕЛЬНО нашей рамки просмотра
           const mouseX = e.clientX - rect.left;
           const mouseY = e.clientY - rect.top;
 
-          // Рассчитываем, на какую точку самой картинки указывает курсор до зума
           const imageTargetX = (mouseX - translateX) / scale;
           const imageTargetY = (mouseY - translateY) / scale;
 
-          // Шаг изменения масштаба
           const zoomFactor = 0.25;
-          const oldScale = scale;
 
           if (e.deltaY < 0) {
             if (scale < 6) scale += zoomFactor;
@@ -178,14 +185,12 @@ document.addEventListener("DOMContentLoaded", function() {
             if (scale > 1) scale -= zoomFactor;
           }
 
-          // Если ушли в самый минимум, плавно возвращаем в идеальный центр
           if (scale <= 1) {
             scale = 1;
             translateX = defaultX;
             translateY = defaultY;
             img.style.cursor = 'zoom-in';
           } else {
-            // Магия координат: сдвигаем картинку так, чтобы точка под курсором осталась на месте
             translateX = mouseX - imageTargetX * scale;
             translateY = mouseY - imageTargetY * scale;
             img.style.cursor = 'move';
@@ -194,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function() {
           applyTransform(true);
         });
 
-        // 2. НАЧАЛО ПЕРЕТАСКИВАНИЯ
+        // Начало перетаскивания
         viewContainer.addEventListener('mousedown', function (e) {
           if (scale <= 1) return;
           isDragging = true;
@@ -204,7 +209,7 @@ document.addEventListener("DOMContentLoaded", function() {
           startY = e.clientY - translateY;
         });
 
-        // 3. ПРОЦЕСС ПЕРЕТАСКИВАНИЯ
+        // Процесс перетаскивания
         viewContainer.addEventListener('mousemove', function (e) {
           if (!isDragging) return;
           hasMoved = true;
@@ -217,7 +222,7 @@ document.addEventListener("DOMContentLoaded", function() {
           isDragging = false;
         });
 
-        // 4. КЛИК ДЛЯ БЫСТРОГО ЗУМА (Увеличивает в точку клика)
+        // Клик для быстрого зума
         img.addEventListener('click', function (e) {
           if (hasMoved) return; 
 
@@ -229,7 +234,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const imageTargetX = (mouseX - translateX) / scale;
             const imageTargetY = (mouseY - translateY) / scale;
 
-            scale = 2; // Прыгаем сразу на 2х кратное увеличение
+            scale = 2; 
             translateX = mouseX - imageTargetX * scale;
             translateY = mouseY - imageTargetY * scale;
             
@@ -238,7 +243,7 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         });
 
-        // 5. КНОПКА СБРОСА (Возвращает в точный центр)
+        // Кнопка сброса
         resetBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           scale = 1;
