@@ -106,67 +106,87 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
-      // Находим все схемы Excalidraw
+      // Находим все SVG-схемы от Excalidraw
       const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
 
       images.forEach(img => {
+        // Задаем базовые стили отображения
         img.style.cursor = 'zoom-in';
-        img.style.transition = 'width 0.1s ease-out';
+        img.style.transition = 'transform 0.1s ease-out';
+        img.style.transformOrigin = 'center center';
         
-        // Создаем контейнер, который БУДЕТ скроллиться в любые стороны
-        const scrollBox = document.createElement('div');
-        scrollBox.style.cssText = 'width: 100%; max-width: 800px; height: 500px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: auto; margin: 20px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: flex-start;';
+        // Создаем изолированный контейнер-рамку для просмотра
+        const viewContainer = document.createElement('div');
+        viewContainer.style.cssText = 'width: 100%; max-width: 800px; height: 500px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 20px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none;';
         
-        img.parentNode.insertBefore(scrollBox, img);
-        scrollBox.appendChild(img);
+        img.parentNode.insertBefore(viewContainer, img);
+        viewContainer.appendChild(img);
 
-        // Запоминаем исходную физическую ширину картинки в пикселях
-        const baseWidth = img.clientWidth || 600; 
-        let currentWidth = baseWidth;
-        
-        // Задаем картинке фиксированную начальную ширину и убираем ограничения темы сайта
-        img.style.width = baseWidth + 'px';
-        img.style.maxWidth = 'none';
+        // Переменные состояния
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY;
+        let translateX = 0, translateY = 0;
 
-        // Отслеживаем прокрутку колесика мыши над контейнером
-        scrollBox.addEventListener('wheel', function (e) {
-          e.preventDefault(); // Запрещаем скролл всей страницы сайта
+        // Функция применения изменений к картинке
+        function applyTransform(animate = true) {
+          img.style.transition = animate ? 'transform 0.15s ease-out' : 'none';
+          img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
 
-          // Шаг изменения ширины: +/- 10% от базового размера за один шаг колесика
-          const step = baseWidth * 0.15;
+        // 1. УПРАВЛЕНИЕ МАСШТАБОМ (КОЛЕСИКО МЫШИ)
+        viewContainer.addEventListener('wheel', function (e) {
+          e.preventDefault(); // Запрещаем прокрутку всей страницы сайта
+
+          // Шаг изменения масштаба
+          const zoomFactor = 0.25;
 
           if (e.deltaY < 0) {
-            // Крутим вверх — увеличиваем физическую ширину (макс в 4 раза от базовой)
-            if (currentWidth < baseWidth * 4) {
-              currentWidth += step;
-            }
+            if (scale < 6) scale += zoomFactor; // Максимальный зум в 6 раз
           } else {
-            // Крутим вниз — уменьшаем обратно до исходного размера
-            if (currentWidth > baseWidth) {
-              currentWidth -= step;
-            }
+            if (scale > 1) scale -= zoomFactor; // Минимальный зум - исходный размер
           }
 
-          // Применяем РЕАЛЬНУЮ ширину к картинке
-          img.style.width = currentWidth + 'px';
-
-          // Меняем курсор и логику выравнивания в зависимости от размера
-          if (currentWidth > baseWidth) {
-            img.style.cursor = 'zoom-out';
-            scrollBox.style.justifyContent = 'flex-start'; // Позволяет корректно скроллить от левого края
-          } else {
+          // Если вернулись к исходному размеру, сбрасываем смещение в центр
+          if (scale === 1) {
+            translateX = 0;
+            translateY = 0;
             img.style.cursor = 'zoom-in';
-            scrollBox.style.justifyContent = 'center';     // Центрирует, если картинка исходного размера
+          } else {
+            img.style.cursor = 'move';
           }
+
+          applyTransform(true);
         });
 
-        // Сброс масштаба по клику на картинку
-        img.addEventListener('click', function() {
-          if (currentWidth > baseWidth) {
-            currentWidth = baseWidth;
-            img.style.width = baseWidth + 'px';
+        // 2. ПЕРЕТАСКИВАНИЕ МЫШКОЙ (РАБОТАЕТ, ТОЛЬКО ЕСЛИ КАРТИНКА УВЕЛИЧЕНА)
+        viewContainer.addEventListener('mousedown', function (e) {
+          if (scale <= 1) return; // Если картинка не увеличена, перетаскивание не нужно
+          isDragging = true;
+          img.style.transition = 'none'; // Отключаем анимацию для плавной тяги
+          startX = e.clientX - translateX;
+          startY = e.clientY - translateY;
+        });
+
+        window.addEventListener('mouseup', function () {
+          isDragging = false;
+        });
+
+        viewContainer.addEventListener('mousemove', function (e) {
+          if (!isDragging) return;
+          translateX = e.clientX - startX;
+          translateY = e.clientY - startY;
+          applyTransform(false); // Двигаем мгновенно вслед за мышкой
+        });
+
+        // 3. БЫСТРЫЙ СБРОС (КЛИК МЫШКОЙ)
+        img.addEventListener('click', function (e) {
+          if (scale > 1 && !isDragging) {
+            scale = 1;
+            translateX = 0;
+            translateY = 0;
             img.style.cursor = 'zoom-in';
-            scrollBox.style.justifyContent = 'center';
+            applyTransform(true);
           }
         });
       });
