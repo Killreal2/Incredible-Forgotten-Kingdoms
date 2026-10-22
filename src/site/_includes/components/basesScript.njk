@@ -103,10 +103,10 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
+html
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
-      // Находим все схемы Excalidraw
       const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
 
       images.forEach(img => {
@@ -114,11 +114,11 @@ document.addEventListener("DOMContentLoaded", function() {
         img.style.transition = 'transform 0.1s ease-out';
         img.style.transformOrigin = 'center center';
         
-        // Создаем изолированный контейнер-рамку
+        // --- ОБНОВЛЕННЫЙ БЛОК: Растягиваем рамку на 100% ширины сайта ---
         const viewContainer = document.createElement('div');
-        viewContainer.style.cssText = 'width: 100%; max-width: 800px; height: 500px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 20px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none;';
+        viewContainer.style.cssText = 'width: 100%; height: 600px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px 0; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none;';
+        // -------------------------------------------------------------
         
-        // Создаем кнопку сброса в углу рамки
         const resetBtn = document.createElement('button');
         resetBtn.innerHTML = '🎯 Сбросить зум';
         resetBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; z-index: 100; padding: 6px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.75); color: #fff; border: none; border-radius: 20px; cursor: pointer; display: none; font-family: sans-serif; transition: opacity 0.2s, background 0.2s;';
@@ -129,18 +129,16 @@ document.addEventListener("DOMContentLoaded", function() {
         viewContainer.appendChild(img);
         viewContainer.appendChild(resetBtn);
 
-        // Переменные состояния
         let scale = 1;
         let isDragging = false;
         let startX, startY;
         let translateX = 0, translateY = 0;
-        let hasMoved = false; // Флаг, отличающий клик от перемещения
+        let hasMoved = false;
 
         function applyTransform(animate = true) {
           img.style.transition = animate ? 'transform 0.15s ease-out' : 'none';
           img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
           
-          // Показываем кнопку сброса только при зуме
           if (scale > 1) {
             resetBtn.style.display = 'block';
           } else {
@@ -148,9 +146,8 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         }
 
-        // 1. УПРАВЛЕНИЕ МАСШТАБОМ (КОЛЕСИКО МЫШИ)
         viewContainer.addEventListener('wheel', function (e) {
-          e.preventDefault(); // Блокируем скролл всей страницы сайта
+          e.preventDefault();
 
           const zoomFactor = 0.25;
           if (e.deltaY < 0) {
@@ -170,36 +167,30 @@ document.addEventListener("DOMContentLoaded", function() {
           applyTransform(true);
         });
 
-        // 2. НАЧАЛО ПЕРЕТАСКИВАНИЯ
         viewContainer.addEventListener('mousedown', function (e) {
           if (scale <= 1) return;
           isDragging = true;
-          hasMoved = false; // Обнуляем флаг движения при каждом нажатии
+          hasMoved = false;
           img.style.transition = 'none';
           startX = e.clientX - translateX;
           startY = e.clientY - translateY;
         });
 
-        // 3. ПРОЦЕСС ПЕРЕТАСКИВАНИЯ
         viewContainer.addEventListener('mousemove', function (e) {
           if (!isDragging) return;
-          hasMoved = true; // Мышка сдвинулась — значит это перетаскивание, а не простой клик!
+          hasMoved = true;
           translateX = e.clientX - startX;
           translateY = e.clientY - startY;
           applyTransform(false);
         });
 
-        // 4. КОНЕЦ ПЕРЕТАСКИВАНИЯ
         window.addEventListener('mouseup', function () {
           isDragging = false;
         });
 
-        // 5. КЛИК ПО КАРТИНКЕ (Плавный зум-эффект при обычном клике без перемещения)
         img.addEventListener('click', function (e) {
-          // Если мы тащили картинку, игнорируем клик и не сбрасываем масштаб
           if (hasMoved) return; 
 
-          // Если картинка в обычном состоянии, клик увеличивает её сразу до 2x
           if (scale === 1) {
             scale = 2;
             img.style.cursor = 'move';
@@ -207,9 +198,8 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         });
 
-        // 6. ЛОГИКА РАБОТЫ КНОПКИ СБРОСА
         resetBtn.addEventListener('click', function (e) {
-          e.stopPropagation(); // Отменяем всплытие события, чтобы не триггерить клик по картинке
+          e.stopPropagation();
           scale = 1;
           translateX = 0;
           translateY = 0;
