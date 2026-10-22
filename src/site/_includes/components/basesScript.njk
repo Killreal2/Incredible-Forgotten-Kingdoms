@@ -103,21 +103,20 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-html
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
+      // Находим все схемы Excalidraw
       const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
 
       images.forEach(img => {
         img.style.cursor = 'zoom-in';
         img.style.transition = 'transform 0.1s ease-out';
-        img.style.transformOrigin = 'center center';
+        // ВАЖНО: меняем точку отсчета на левый верхний угол для точного расчета координат
+        img.style.transformOrigin = '0 0'; 
         
-        // --- ОБНОВЛЕННЫЙ БЛОК: Растягиваем рамку на 100% ширины сайта ---
         const viewContainer = document.createElement('div');
         viewContainer.style.cssText = 'width: 100%; height: 600px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px 0; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none;';
-        // -------------------------------------------------------------
         
         const resetBtn = document.createElement('button');
         resetBtn.innerHTML = '🎯 Сбросить зум';
@@ -129,11 +128,21 @@ html
         viewContainer.appendChild(img);
         viewContainer.appendChild(resetBtn);
 
+        // Переменные состояния
         let scale = 1;
         let isDragging = false;
         let startX, startY;
-        let translateX = 0, translateY = 0;
-        let hasMoved = false;
+        
+        // Изначально выравниваем картинку по центру контейнера вручную
+        let translateX = (viewContainer.clientWidth - img.clientWidth) / 2;
+        let translateY = (viewContainer.clientHeight - img.clientHeight) / 2;
+        
+        // Запоминаем дефолтные центрированные координаты для сброса
+        const defaultX = translateX;
+        const defaultY = translateY;
+
+        // Применяем стартовое позиционирование без анимации
+        img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
 
         function applyTransform(animate = true) {
           img.style.transition = animate ? 'transform 0.15s ease-out' : 'none';
@@ -146,27 +155,46 @@ html
           }
         }
 
+        // --- ОБНОВЛЕННЫЙ УМНЫЙ ЗУМ В ТОЧКУ КУРСОРА ---
         viewContainer.addEventListener('wheel', function (e) {
-          e.preventDefault();
+          e.preventDefault(); // Блокируем скролл страницы сайта
 
+          const rect = viewContainer.getBoundingClientRect();
+          // Получаем точные координаты мыши ОТНОСИТЕЛЬНО нашей рамки просмотра
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Рассчитываем, на какую точку самой картинки указывает курсор до зума
+          const imageTargetX = (mouseX - translateX) / scale;
+          const imageTargetY = (mouseY - translateY) / scale;
+
+          // Шаг изменения масштаба
           const zoomFactor = 0.25;
+          const oldScale = scale;
+
           if (e.deltaY < 0) {
             if (scale < 6) scale += zoomFactor;
           } else {
             if (scale > 1) scale -= zoomFactor;
           }
 
-          if (scale === 1) {
-            translateX = 0;
-            translateY = 0;
+          // Если ушли в самый минимум, плавно возвращаем в идеальный центр
+          if (scale <= 1) {
+            scale = 1;
+            translateX = defaultX;
+            translateY = defaultY;
             img.style.cursor = 'zoom-in';
           } else {
+            // Магия координат: сдвигаем картинку так, чтобы точка под курсором осталась на месте
+            translateX = mouseX - imageTargetX * scale;
+            translateY = mouseY - imageTargetY * scale;
             img.style.cursor = 'move';
           }
 
           applyTransform(true);
         });
 
+        // 2. НАЧАЛО ПЕРЕТАСКИВАНИЯ
         viewContainer.addEventListener('mousedown', function (e) {
           if (scale <= 1) return;
           isDragging = true;
@@ -176,6 +204,7 @@ html
           startY = e.clientY - translateY;
         });
 
+        // 3. ПРОЦЕСС ПЕРЕТАСКИВАНИЯ
         viewContainer.addEventListener('mousemove', function (e) {
           if (!isDragging) return;
           hasMoved = true;
@@ -188,21 +217,33 @@ html
           isDragging = false;
         });
 
+        // 4. КЛИК ДЛЯ БЫСТРОГО ЗУМА (Увеличивает в точку клика)
         img.addEventListener('click', function (e) {
           if (hasMoved) return; 
 
           if (scale === 1) {
-            scale = 2;
+            const rect = viewContainer.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const imageTargetX = (mouseX - translateX) / scale;
+            const imageTargetY = (mouseY - translateY) / scale;
+
+            scale = 2; // Прыгаем сразу на 2х кратное увеличение
+            translateX = mouseX - imageTargetX * scale;
+            translateY = mouseY - imageTargetY * scale;
+            
             img.style.cursor = 'move';
             applyTransform(true);
           }
         });
 
+        // 5. КНОПКА СБРОСА (Возвращает в точный центр)
         resetBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           scale = 1;
-          translateX = 0;
-          translateY = 0;
+          translateX = defaultX;
+          translateY = defaultY;
           img.style.cursor = 'zoom-in';
           applyTransform(true);
         });
