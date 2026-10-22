@@ -110,53 +110,63 @@ document.addEventListener("DOMContentLoaded", function() {
       const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
 
       images.forEach(img => {
-        // Задаем начальные настройки для нормального отображения
         img.style.cursor = 'zoom-in';
-        img.style.transition = 'transform 0.1s ease-out';
-        img.style.transformOrigin = 'center center'; // Масштабируем строго от центра
+        img.style.transition = 'width 0.1s ease-out';
         
-        // Создаем контейнер, в котором будет разрешено прокручивать увеличенную картинку
+        // Создаем контейнер, который БУДЕТ скроллиться в любые стороны
         const scrollBox = document.createElement('div');
-        scrollBox.style.cssText = 'width: 100%; max-width: 800px; height: 500px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: auto; margin: 20px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center;';
+        scrollBox.style.cssText = 'width: 100%; max-width: 800px; height: 500px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: auto; margin: 20px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: flex-start;';
         
         img.parentNode.insertBefore(scrollBox, img);
         scrollBox.appendChild(img);
 
-        let currentScale = 1;
+        // Запоминаем исходную физическую ширину картинки в пикселях
+        const baseWidth = img.clientWidth || 600; 
+        let currentWidth = baseWidth;
+        
+        // Задаем картинке фиксированную начальную ширину и убираем ограничения темы сайта
+        img.style.width = baseWidth + 'px';
+        img.style.maxWidth = 'none';
 
-        // Отслеживаем прокрутку колесика МЫШИ НАД КАРТИНКОЙ
+        // Отслеживаем прокрутку колесика мыши над контейнером
         scrollBox.addEventListener('wheel', function (e) {
-          // Реагируем на скролл только если зажат Ctrl (стандартный жест зума в браузере)
-          // или просто при любом движении колесика внутри рамки
           e.preventDefault(); // Запрещаем скролл всей страницы сайта
 
-          // Шаг зума: крутим вверх — увеличиваем, вниз — уменьшаем
+          // Шаг изменения ширины: +/- 10% от базового размера за один шаг колесика
+          const step = baseWidth * 0.15;
+
           if (e.deltaY < 0) {
-            if (currentScale < 5) currentScale += 0.25; // Макс 5 кратное увеличение
+            // Крутим вверх — увеличиваем физическую ширину (макс в 4 раза от базовой)
+            if (currentWidth < baseWidth * 4) {
+              currentWidth += step;
+            }
           } else {
-            if (currentScale > 1) currentScale -= 0.25; // Мин исходный размер
+            // Крутим вниз — уменьшаем обратно до исходного размера
+            if (currentWidth > baseWidth) {
+              currentWidth -= step;
+            }
           }
 
-          // Применяем масштаб к картинке
-          img.style.transform = `scale(${currentScale})`;
+          // Применяем РЕАЛЬНУЮ ширину к картинке
+          img.style.width = currentWidth + 'px';
 
-          // Меняем курсор, чтобы пользователь понимал состояние
-          if (currentScale > 1) {
+          // Меняем курсор и логику выравнивания в зависимости от размера
+          if (currentWidth > baseWidth) {
             img.style.cursor = 'zoom-out';
-            // Если картинка стала большой, заставляем контейнер показывать скроллбары
-            scrollBox.style.overflow = 'auto';
+            scrollBox.style.justifyContent = 'flex-start'; // Позволяет корректно скроллить от левого края
           } else {
             img.style.cursor = 'zoom-in';
-            img.style.transform = 'none';
+            scrollBox.style.justifyContent = 'center';     // Центрирует, если картинка исходного размера
           }
         });
 
         // Сброс масштаба по клику на картинку
         img.addEventListener('click', function() {
-          if (currentScale > 1) {
-            currentScale = 1;
-            img.style.transform = 'none';
+          if (currentWidth > baseWidth) {
+            currentWidth = baseWidth;
+            img.style.width = baseWidth + 'px';
             img.style.cursor = 'zoom-in';
+            scrollBox.style.justifyContent = 'center';
           }
         });
       });
