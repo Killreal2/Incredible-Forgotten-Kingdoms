@@ -103,3 +103,33 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Ждем полной загрузки страницы
+    window.addEventListener('load', function() {
+      // Находим на странице абсолютно все SVG от Excalidraw
+      const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
+
+      images.forEach(img => {
+        // Задаем начальный курсор и плавность
+        img.style.cursor = 'zoom-in';
+        img.style.transition = 'transform 0.2s ease, max-width 0.2s ease';
+
+        img.addEventListener('click', function() {
+          if (this.style.transform === 'scale(2)') {
+            // Возвращаем в исходный вид
+            this.style.transform = 'scale(1)';
+            this.style.cursor = 'zoom-in';
+            this.parentNode.style.overflow = 'visible';
+          } else {
+            // Увеличиваем в 2 раза
+            this.style.transform = 'scale(2)';
+            this.style.cursor = 'zoom-out';
+            // Разрешаем контейнеру прокрутку, если картинка вылезает за экран
+            this.parentNode.style.overflow = 'auto';
+          }
+        });
+      });
+    });
+  });
+</script>
