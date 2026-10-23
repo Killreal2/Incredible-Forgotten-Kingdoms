@@ -260,24 +260,21 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
-      // Находим только растровые скриншоты предметов (PNG, JPG, JPEG, WEBP)
-      // Исключаем системные иконки, проверяя размер (пропускаем все, что меньше 45px)
       const rasterImages = document.querySelectorAll('.markdown-preview-view img:not([src*=".svg"]), .markdown-rendered img:not([src*=".svg"]), article img:not([src*=".svg"])');
 
       rasterImages.forEach(img => {
         if (img.clientWidth < 45 && img.clientHeight < 45) return;
 
-        // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ДЛЯ PNG: Отключаем встроенный браузерный Drag-and-Drop ---
         img.draggable = false;
         img.addEventListener('dragstart', (e) => e.preventDefault());
-        // ---------------------------------------------------------------------------------
 
         img.style.cursor = 'zoom-in';
         img.style.transition = 'transform 0.1s ease-out';
         img.style.transformOrigin = '0 0'; 
         
         const viewContainer = document.createElement('div');
-        viewContainer.style.cssText = 'width: 100%; height: 600px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px 0; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none;';
+        // ИСПРАВЛЕНИЕ: Рамка адаптируется под размер картинки (высота auto, ширина fit-content)
+        viewContainer.style.cssText = 'width: fit-content; max-width: 100%; height: auto; min-height: 200px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none; padding: 10px;';
         
         const resetBtn = document.createElement('button');
         resetBtn.innerHTML = '🎯 Сбросить зум';
@@ -298,16 +295,18 @@ document.addEventListener("DOMContentLoaded", function() {
         let defaultY = 0;
         let hasMoved = false;
 
+        // ИСПРАВЛЕНИЕ: Идеальное математическое центрирование с учетом внутренних отступов
         function initCenter() {
-          translateX = (viewContainer.clientWidth - img.clientWidth) / 2;
-          translateY = (viewContainer.clientHeight - img.clientHeight) / 2;
+          translateX = (viewContainer.getBoundingClientRect().width - img.getBoundingClientRect().width) / 2;
+          translateY = (viewContainer.getBoundingClientRect().height - img.getBoundingClientRect().height) / 2;
           defaultX = translateX;
           defaultY = translateY;
           img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
         }
 
         if (img.complete) {
-          initCenter();
+          // Дополнительная микро-задержка, чтобы браузер успел корректно рассчитать размеры растра
+          setTimeout(initCenter, 50);
         } else {
           img.addEventListener('load', initCenter);
         }
@@ -355,10 +354,9 @@ document.addEventListener("DOMContentLoaded", function() {
           applyTransform(true);
         });
 
-        // Захват мыши для перемещения растровой карточки
         viewContainer.addEventListener('mousedown', function (e) {
           if (scale <= 1) return;
-          e.preventDefault(); // Предотвращаем выделение и системные баги растра
+          e.preventDefault(); 
           isDragging = true;
           hasMoved = false;
           img.style.transition = 'none';
