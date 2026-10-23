@@ -106,8 +106,8 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
-      // Находим все схемы Excalidraw
-      const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
+      // Находим все изображения
+      const images = document.querySelectorAll('.markdown-preview-view img, .markdown-rendered img, article img');
 
       images.forEach(img => {
         img.style.cursor = 'zoom-in';
