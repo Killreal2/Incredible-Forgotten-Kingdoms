@@ -103,33 +103,43 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
+// скрипты управления картинками
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
-      // Находим все изображения эксалидроу
-      const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
+      // Находим все схемы Excalidraw и SVG-картинки
+      const svgImages = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
 
-      images.forEach(img => {
+      svgImages.forEach(img => {
         img.style.cursor = 'zoom-in';
         img.style.transition = 'transform 0.1s ease-out';
         img.style.transformOrigin = '0 0'; 
         
         const viewContainer = document.createElement('div');
-        viewContainer.style.cssText = 'width: 100%; height: 600px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px 0; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none;';
+        viewContainer.style.cssText = 'width: 100%; height: 600px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px 0; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none; transition: all 0.2s ease-out;';
         
+        // Кнопка 1: Сброс зума
         const resetBtn = document.createElement('button');
         resetBtn.innerHTML = '🎯 Сбросить зум';
         resetBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; z-index: 100; padding: 6px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.75); color: #fff; border: none; border-radius: 20px; cursor: pointer; display: none; font-family: sans-serif; transition: opacity 0.2s, background 0.2s;';
         resetBtn.onmouseover = () => resetBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         resetBtn.onmouseout = () => resetBtn.style.background = 'rgba(0, 0, 0, 0.75)';
 
+        // Кнопка 2: На весь экран для SVG
+        const fullBtn = document.createElement('button');
+        fullBtn.innerHTML = '🔍 На весь экран';
+        fullBtn.style.cssText = 'position: absolute; top: 15px; left: 15px; z-index: 100; padding: 6px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.75); color: #fff; border: none; border-radius: 20px; cursor: pointer; font-family: sans-serif; transition: opacity 0.2s, background 0.2s;';
+        fullBtn.onmouseover = () => fullBtn.style.background = 'rgba(0, 0, 0, 0.9)';
+        fullBtn.onmouseout = () => fullBtn.style.background = 'rgba(0, 0, 0, 0.75)';
+
         img.parentNode.insertBefore(viewContainer, img);
         viewContainer.appendChild(img);
         viewContainer.appendChild(resetBtn);
+        viewContainer.appendChild(fullBtn);
 
-        // Переменные состояния (будут рассчитаны после загрузки картинки)
         let scale = 1;
         let isDragging = false;
+        let isFullscreen = false; // Состояние полноэкранного режима для SVG
         let startX, startY;
         let translateX = 0;
         let translateY = 0;
@@ -137,23 +147,24 @@ document.addEventListener("DOMContentLoaded", function() {
         let defaultY = 0;
         let hasMoved = false;
 
-        // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ: Идеальное центрирование строго после полной загрузки SVG ---
         function initCenter() {
-          translateX = (viewContainer.clientWidth - img.clientWidth) / 2;
-          translateY = (viewContainer.clientHeight - img.clientHeight) / 2;
+          translateX = (viewContainer.getBoundingClientRect().width - img.getBoundingClientRect().width) / 2;
+          translateY = (viewContainer.getBoundingClientRect().height - img.getBoundingClientRect().height) / 2;
           defaultX = translateX;
           defaultY = translateY;
           img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
         }
 
-        // Если картинка уже была в кэше браузера к этому моменту
         if (img.complete) {
           initCenter();
         } else {
-          // Если картинка еще скачивается — ждем её полной готовности
           img.addEventListener('load', initCenter);
         }
-        // ---------------------------------------------------------------------------------
+
+        // Перерасчет центра карт при ресайзе окна браузера
+        window.addEventListener('resize', () => {
+          if (!isDragging) setTimeout(initCenter, 50);
+        });
 
         function applyTransform(animate = true) {
           img.style.transition = animate ? 'transform 0.15s ease-out' : 'none';
@@ -166,7 +177,64 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         }
 
-        // Управление масштабом (колесико мыши)
+        // --- МЕХАНИКА ПОЛНОЭКРАННОГО РЕЖИМА ДЛЯ SVG ---
+        function toggleFullscreen() {
+          isFullscreen = !isFullscreen;
+          if (isFullscreen) {
+            // Разворачиваем карту на весь экран поверх сайта
+            viewContainer.style.position = 'fixed';
+            viewContainer.style.top = '0';
+            viewContainer.style.left = '0';
+            viewContainer.style.width = '100vw';
+            viewContainer.style.height = '100vh';
+            viewContainer.style.maxWidth = '100vw';
+            viewContainer.style.zIndex = '9999';
+            viewContainer.style.background = 'rgba(15, 15, 15, 0.95)'; 
+            viewContainer.style.margin = '0';
+            viewContainer.style.borderRadius = '0';
+            fullBtn.innerHTML = '❌ Закрыть';
+            fullBtn.style.background = '#8e2524';
+            
+            setTimeout(initCenter, 50);
+          } else {
+            // Возвращаем карту обратно в её исходные 600px высоты в статью
+            viewContainer.style.position = 'relative';
+            viewContainer.style.top = 'auto';
+            viewContainer.style.left = 'auto';
+            viewContainer.style.width = '100%';
+            viewContainer.style.maxWidth = '100%';
+            viewContainer.style.height = '600px'; // Сохраняем исходную высоту для карт
+            viewContainer.style.zIndex = '1';
+            viewContainer.style.background = 'var(--background-secondary, #fafafa)';
+            viewContainer.style.margin = '25px 0';
+            viewContainer.style.borderRadius = '8px';
+            fullBtn.innerHTML = '🔍 На весь экран';
+            fullBtn.style.background = 'rgba(0, 0, 0, 0.75)';
+            
+            // ИСПРАВЛЕНИЕ ЦЕНТРИРОВАНИЯ: Жесткий сброс координат и масштаба
+            scale = 1;
+            translateX = defaultX;
+            translateY = defaultY;
+            img.style.cursor = 'zoom-in';
+            
+            // Задержка на сворачивание контейнера, после чего центрируем карту идеально
+            setTimeout(initCenter, 30);
+          }
+        }
+
+        fullBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          toggleFullscreen();
+        });
+
+        // Закрытие по кнопке Esc
+        window.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape' && isFullscreen) {
+            toggleFullscreen();
+          }
+        });
+        // ------------------------------------------------
+
         viewContainer.addEventListener('wheel', function (e) {
           e.preventDefault(); 
 
@@ -199,9 +267,8 @@ document.addEventListener("DOMContentLoaded", function() {
           applyTransform(true);
         });
 
-        // Начало перетаскивания
         viewContainer.addEventListener('mousedown', function (e) {
-          if (scale <= 1) return;
+          if (scale <= 1 && !isFullscreen) return;
           isDragging = true;
           hasMoved = false;
           img.style.transition = 'none';
@@ -209,7 +276,6 @@ document.addEventListener("DOMContentLoaded", function() {
           startY = e.clientY - translateY;
         });
 
-        // Процесс перетаскивания
         viewContainer.addEventListener('mousemove', function (e) {
           if (!isDragging) return;
           hasMoved = true;
@@ -222,7 +288,6 @@ document.addEventListener("DOMContentLoaded", function() {
           isDragging = false;
         });
 
-        // Клик для быстрого зума
         img.addEventListener('click', function (e) {
           if (hasMoved) return; 
 
@@ -243,7 +308,6 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         });
 
-        // Кнопка сброса
         resetBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           scale = 1;
