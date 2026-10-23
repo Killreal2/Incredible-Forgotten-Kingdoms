@@ -106,8 +106,8 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
-      // Находим все изображения
-      const images = document.querySelectorAll('.markdown-preview-view img, .markdown-rendered img, article img');
+      // Находим все изображения эксалидроу
+      const images = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
 
       images.forEach(img => {
         img.style.cursor = 'zoom-in';
@@ -244,6 +244,160 @@ document.addEventListener("DOMContentLoaded", function() {
         });
 
         // Кнопка сброса
+        resetBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          scale = 1;
+          translateX = defaultX;
+          translateY = defaultY;
+          img.style.cursor = 'zoom-in';
+          applyTransform(true);
+        });
+      });
+    });
+  });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    window.addEventListener('load', function() {
+      // Находим только растровые скриншоты предметов (PNG, JPG, JPEG, WEBP)
+      // Исключаем системные иконки, проверяя размер (пропускаем все, что меньше 45px)
+      const rasterImages = document.querySelectorAll('.markdown-preview-view img:not([src*=".svg"]), .markdown-rendered img:not([src*=".svg"]), article img:not([src*=".svg"])');
+
+      rasterImages.forEach(img => {
+        if (img.clientWidth < 45 && img.clientHeight < 45) return;
+
+        // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ДЛЯ PNG: Отключаем встроенный браузерный Drag-and-Drop ---
+        img.draggable = false;
+        img.addEventListener('dragstart', (e) => e.preventDefault());
+        // ---------------------------------------------------------------------------------
+
+        img.style.cursor = 'zoom-in';
+        img.style.transition = 'transform 0.1s ease-out';
+        img.style.transformOrigin = '0 0'; 
+        
+        const viewContainer = document.createElement('div');
+        viewContainer.style.cssText = 'width: 100%; height: 600px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px 0; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none;';
+        
+        const resetBtn = document.createElement('button');
+        resetBtn.innerHTML = '🎯 Сбросить зум';
+        resetBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; z-index: 100; padding: 6px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.75); color: #fff; border: none; border-radius: 20px; cursor: pointer; display: none; font-family: sans-serif; transition: opacity 0.2s, background 0.2s;';
+        resetBtn.onmouseover = () => resetBtn.style.background = 'rgba(0, 0, 0, 0.9)';
+        resetBtn.onmouseout = () => resetBtn.style.background = 'rgba(0, 0, 0, 0.75)';
+
+        img.parentNode.insertBefore(viewContainer, img);
+        viewContainer.appendChild(img);
+        viewContainer.appendChild(resetBtn);
+
+        let scale = 1;
+        let isDragging = false;
+        let startX, startY;
+        let translateX = 0;
+        let translateY = 0;
+        let defaultX = 0;
+        let defaultY = 0;
+        let hasMoved = false;
+
+        function initCenter() {
+          translateX = (viewContainer.clientWidth - img.clientWidth) / 2;
+          translateY = (viewContainer.clientHeight - img.clientHeight) / 2;
+          defaultX = translateX;
+          defaultY = translateY;
+          img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+
+        if (img.complete) {
+          initCenter();
+        } else {
+          img.addEventListener('load', initCenter);
+        }
+
+        function applyTransform(animate = true) {
+          img.style.transition = animate ? 'transform 0.15s ease-out' : 'none';
+          img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+          
+          if (scale > 1) {
+            resetBtn.style.display = 'block';
+          } else {
+            resetBtn.style.display = 'none';
+          }
+        }
+
+        viewContainer.addEventListener('wheel', function (e) {
+          e.preventDefault(); 
+
+          const rect = viewContainer.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          const imageTargetX = (mouseX - translateX) / scale;
+          const imageTargetY = (mouseY - translateY) / scale;
+
+          const zoomFactor = 0.25;
+
+          if (e.deltaY < 0) {
+            if (scale < 6) scale += zoomFactor;
+          } else {
+            if (scale > 1) scale -= zoomFactor;
+          }
+
+          if (scale <= 1) {
+            scale = 1;
+            translateX = defaultX;
+            translateY = defaultY;
+            img.style.cursor = 'zoom-in';
+          } else {
+            translateX = mouseX - imageTargetX * scale;
+            translateY = mouseY - imageTargetY * scale;
+            img.style.cursor = 'move';
+          }
+
+          applyTransform(true);
+        });
+
+        // Захват мыши для перемещения растровой карточки
+        viewContainer.addEventListener('mousedown', function (e) {
+          if (scale <= 1) return;
+          e.preventDefault(); // Предотвращаем выделение и системные баги растра
+          isDragging = true;
+          hasMoved = false;
+          img.style.transition = 'none';
+          startX = e.clientX - translateX;
+          startY = e.clientY - translateY;
+        });
+
+        viewContainer.addEventListener('mousemove', function (e) {
+          if (!isDragging) return;
+          hasMoved = true;
+          translateX = e.clientX - startX;
+          translateY = e.clientY - startY;
+          applyTransform(false);
+        });
+
+        window.addEventListener('mouseup', function () {
+          isDragging = false;
+        });
+
+        img.addEventListener('click', function (e) {
+          if (hasMoved) return; 
+
+          if (scale === 1) {
+            const rect = viewContainer.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const imageTargetX = (mouseX - translateX) / scale;
+            const imageTargetY = (mouseY - translateY) / scale;
+
+            scale = 2; 
+            translateX = mouseX - imageTargetX * scale;
+            translateY = mouseY - imageTargetY * scale;
+            
+            img.style.cursor = 'move';
+            applyTransform(true);
+          }
+        });
+
         resetBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           scale = 1;
