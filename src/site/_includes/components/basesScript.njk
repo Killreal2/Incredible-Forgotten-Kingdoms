@@ -275,14 +275,12 @@ document.addEventListener("DOMContentLoaded", function() {
         const viewContainer = document.createElement('div');
         viewContainer.style.cssText = 'width: fit-content; max-width: 100%; height: auto; min-height: 200px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none; padding: 10px; transition: all 0.2s ease-out;';
         
-        // Кнопка 1: Сброс зума
         const resetBtn = document.createElement('button');
         resetBtn.innerHTML = '🎯 Сбросить зум';
         resetBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; z-index: 100; padding: 6px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.75); color: #fff; border: none; border-radius: 20px; cursor: pointer; display: none; font-family: sans-serif; transition: opacity 0.2s, background 0.2s;';
         resetBtn.onmouseover = () => resetBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         resetBtn.onmouseout = () => resetBtn.style.background = 'rgba(0, 0, 0, 0.75)';
 
-        // НОВАЯ КНОПКА 2: На весь экран
         const fullBtn = document.createElement('button');
         fullBtn.innerHTML = '🔍 На весь экран';
         fullBtn.style.cssText = 'position: absolute; top: 15px; left: 15px; z-index: 100; padding: 6px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.75); color: #fff; border: none; border-radius: 20px; cursor: pointer; font-family: sans-serif; transition: opacity 0.2s, background 0.2s;';
@@ -296,7 +294,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let scale = 1;
         let isDragging = false;
-        let isFullscreen = false; // Состояние полноэкранного режима
+        let isFullscreen = false;
         let startX, startY;
         let translateX = 0;
         let translateY = 0;
@@ -318,7 +316,6 @@ document.addEventListener("DOMContentLoaded", function() {
           img.addEventListener('load', () => setTimeout(initCenter, 100));
         }
 
-        // Перерасчет центра при изменении размеров экрана (важно для полноэкранного режима)
         window.addEventListener('resize', () => {
           if (!isDragging) setTimeout(initCenter, 50);
         });
@@ -334,11 +331,9 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         }
 
-        // --- МЕХАНИКА ПОЛНОЭКРАННОГО РЕЖИМА ---
         function toggleFullscreen() {
           isFullscreen = !isFullscreen;
           if (isFullscreen) {
-            // Разворачиваем контейнер на весь экран поверх сайта
             viewContainer.style.position = 'fixed';
             viewContainer.style.top = '0';
             viewContainer.style.left = '0';
@@ -346,13 +341,14 @@ document.addEventListener("DOMContentLoaded", function() {
             viewContainer.style.height = '100vh';
             viewContainer.style.maxWidth = '100vw';
             viewContainer.style.zIndex = '9999';
-            viewContainer.style.background = 'rgba(15, 15, 15, 0.95)'; // Темный красивый фон кинтеатра
+            viewContainer.style.background = 'rgba(15, 15, 15, 0.95)'; 
             viewContainer.style.margin = '0';
             viewContainer.style.borderRadius = '0';
             fullBtn.innerHTML = '❌ Закрыть';
             fullBtn.style.background = '#8e2524';
+            
+            setTimeout(initCenter, 50);
           } else {
-            // Возвращаем как было в таблицу
             viewContainer.style.position = 'relative';
             viewContainer.style.top = 'auto';
             viewContainer.style.left = 'auto';
@@ -365,11 +361,15 @@ document.addEventListener("DOMContentLoaded", function() {
             viewContainer.style.borderRadius = '8px';
             fullBtn.innerHTML = '🔍 На весь экран';
             fullBtn.style.background = 'rgba(0, 0, 0, 0.75)';
-            // Сбрасываем зум при выходе
+            
+            // ПРИМЕНЕНИЕ ИСПРАВЛЕНИЯ ЗДЕСЬ
             scale = 1;
+            translateX = defaultX;
+            translateY = defaultY;
+            img.style.cursor = 'zoom-in';
+            
+            setTimeout(initCenter, 30);
           }
-          // Даем браузеру время обновить размеры контейнера и перецентрируем картинку
-          setTimeout(initCenter, 50);
         }
 
         fullBtn.addEventListener('click', function (e) {
@@ -377,13 +377,11 @@ document.addEventListener("DOMContentLoaded", function() {
           toggleFullscreen();
         });
 
-        // Закрытие по кнопке Esc на клавиатуре
         window.addEventListener('keydown', function (e) {
           if (e.key === 'Escape' && isFullscreen) {
             toggleFullscreen();
           }
         });
-        // ----------------------------------------
 
         viewContainer.addEventListener('wheel', function (e) {
           e.preventDefault(); 
