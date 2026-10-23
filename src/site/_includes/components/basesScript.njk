@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-// скрипты управления картинками
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
@@ -337,7 +337,8 @@ document.addEventListener("DOMContentLoaded", function() {
         img.style.transformOrigin = '0 0'; 
         
         const viewContainer = document.createElement('div');
-        viewContainer.style.cssText = 'width: fit-content; max-width: 100%; height: auto; min-height: 200px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none; padding: 10px; transition: all 0.2s ease-out;';
+        // ГЛАВНОЕ ИСПРАВЛЕНИЕ: Убран transition: all из базовых стилей контейнера, чтобы избежать перекоса координат
+        viewContainer.style.cssText = 'width: fit-content; max-width: 100%; height: auto; min-height: 200px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px auto; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none; padding: 10px;';
         
         const resetBtn = document.createElement('button');
         resetBtn.innerHTML = '🎯 Сбросить зум';
@@ -413,6 +414,7 @@ document.addEventListener("DOMContentLoaded", function() {
             
             setTimeout(initCenter, 50);
           } else {
+            // Мгновенный сброс стилей без плавных переходов анимации CSS
             viewContainer.style.position = 'relative';
             viewContainer.style.top = 'auto';
             viewContainer.style.left = 'auto';
@@ -426,13 +428,17 @@ document.addEventListener("DOMContentLoaded", function() {
             fullBtn.innerHTML = '🔍 На весь экран';
             fullBtn.style.background = 'rgba(0, 0, 0, 0.75)';
             
-            // ПРИМЕНЕНИЕ ИСПРАВЛЕНИЯ ЗДЕСЬ
             scale = 1;
-            translateX = defaultX;
-            translateY = defaultY;
             img.style.cursor = 'zoom-in';
             
-            setTimeout(initCenter, 30);
+            // Фиксируем мгновенный жесткий перезапуск математики координат
+            translateX = (viewContainer.clientWidth - img.clientWidth) / 2;
+            translateY = (viewContainer.clientHeight - img.clientHeight) / 2;
+            defaultX = translateX;
+            defaultY = translateY;
+            
+            applyTransform(false);
+            setTimeout(initCenter, 20);
           }
         }
 
