@@ -107,7 +107,6 @@ document.addEventListener("DOMContentLoaded", function() {
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     window.addEventListener('load', function() {
-      // Находим все схемы Excalidraw и SVG-картинки
       const svgImages = document.querySelectorAll('img[src*=".svg"], .excalidraw-svg');
 
       svgImages.forEach(img => {
@@ -116,16 +115,15 @@ document.addEventListener("DOMContentLoaded", function() {
         img.style.transformOrigin = '0 0'; 
         
         const viewContainer = document.createElement('div');
-        viewContainer.style.cssText = 'width: 100%; height: 600px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px 0; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none; transition: all 0.2s ease-out;';
+        // ГЛАВНОЕ ИСПРАВЛЕНИЕ ДЛЯ SVG: Убран transition: all
+        viewContainer.style.cssText = 'width: 100%; height: 600px; border: 1px solid var(--border-color, #ccc); border-radius: 8px; overflow: hidden; margin: 25px 0; background: var(--background-secondary, #fafafa); display: flex; align-items: center; justify-content: center; position: relative; user-select: none;';
         
-        // Кнопка 1: Сброс зума
         const resetBtn = document.createElement('button');
         resetBtn.innerHTML = '🎯 Сбросить зум';
         resetBtn.style.cssText = 'position: absolute; top: 15px; right: 15px; z-index: 100; padding: 6px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.75); color: #fff; border: none; border-radius: 20px; cursor: pointer; display: none; font-family: sans-serif; transition: opacity 0.2s, background 0.2s;';
         resetBtn.onmouseover = () => resetBtn.style.background = 'rgba(0, 0, 0, 0.9)';
         resetBtn.onmouseout = () => resetBtn.style.background = 'rgba(0, 0, 0, 0.75)';
 
-        // Кнопка 2: На весь экран для SVG
         const fullBtn = document.createElement('button');
         fullBtn.innerHTML = '🔍 На весь экран';
         fullBtn.style.cssText = 'position: absolute; top: 15px; left: 15px; z-index: 100; padding: 6px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.75); color: #fff; border: none; border-radius: 20px; cursor: pointer; font-family: sans-serif; transition: opacity 0.2s, background 0.2s;';
@@ -139,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         let scale = 1;
         let isDragging = false;
-        let isFullscreen = false; // Состояние полноэкранного режима для SVG
+        let isFullscreen = false; 
         let startX, startY;
         let translateX = 0;
         let translateY = 0;
@@ -161,7 +159,6 @@ document.addEventListener("DOMContentLoaded", function() {
           img.addEventListener('load', initCenter);
         }
 
-        // Перерасчет центра карт при ресайзе окна браузера
         window.addEventListener('resize', () => {
           if (!isDragging) setTimeout(initCenter, 50);
         });
@@ -177,11 +174,9 @@ document.addEventListener("DOMContentLoaded", function() {
           }
         }
 
-        // --- МЕХАНИКА ПОЛНОЭКРАННОГО РЕЖИМА ДЛЯ SVG ---
         function toggleFullscreen() {
           isFullscreen = !isFullscreen;
           if (isFullscreen) {
-            // Разворачиваем карту на весь экран поверх сайта
             viewContainer.style.position = 'fixed';
             viewContainer.style.top = '0';
             viewContainer.style.left = '0';
@@ -197,13 +192,12 @@ document.addEventListener("DOMContentLoaded", function() {
             
             setTimeout(initCenter, 50);
           } else {
-            // Возвращаем карту обратно в её исходные 600px высоты в статью
             viewContainer.style.position = 'relative';
             viewContainer.style.top = 'auto';
             viewContainer.style.left = 'auto';
             viewContainer.style.width = '100%';
             viewContainer.style.maxWidth = '100%';
-            viewContainer.style.height = '600px'; // Сохраняем исходную высоту для карт
+            viewContainer.style.height = '600px'; 
             viewContainer.style.zIndex = '1';
             viewContainer.style.background = 'var(--background-secondary, #fafafa)';
             viewContainer.style.margin = '25px 0';
@@ -211,14 +205,17 @@ document.addEventListener("DOMContentLoaded", function() {
             fullBtn.innerHTML = '🔍 На весь экран';
             fullBtn.style.background = 'rgba(0, 0, 0, 0.75)';
             
-            // ИСПРАВЛЕНИЕ ЦЕНТРИРОВАНИЯ: Жесткий сброс координат и масштаба
             scale = 1;
-            translateX = defaultX;
-            translateY = defaultY;
             img.style.cursor = 'zoom-in';
             
-            // Задержка на сворачивание контейнера, после чего центрируем карту идеально
-            setTimeout(initCenter, 30);
+            // Фиксируем мгновенный жесткий перезапуск математики координат для SVG
+            translateX = (viewContainer.clientWidth - img.clientWidth) / 2;
+            translateY = (viewContainer.clientHeight - img.clientHeight) / 2;
+            defaultX = translateX;
+            defaultY = translateY;
+            
+            applyTransform(false);
+            setTimeout(initCenter, 20);
           }
         }
 
@@ -227,13 +224,11 @@ document.addEventListener("DOMContentLoaded", function() {
           toggleFullscreen();
         });
 
-        // Закрытие по кнопке Esc
         window.addEventListener('keydown', function (e) {
           if (e.key === 'Escape' && isFullscreen) {
             toggleFullscreen();
           }
         });
-        // ------------------------------------------------
 
         viewContainer.addEventListener('wheel', function (e) {
           e.preventDefault(); 
