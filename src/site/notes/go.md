@@ -11,21 +11,17 @@
 
 <script>
   window.addEventListener('DOMContentLoaded', () => {
-    // Получаем все параметры, которые пришли из ссылки Roll20
     const currentUrl = window.location.search;
 
     if (currentUrl && currentUrl.includes('filepath=')) {
-      // Собираем ссылку обратно в формат Advanced URI, сохраняя ВСЕ параметры (и блоки, и заголовки)
       let obsidianUri = "obsidian://advanced-uri" + currentUrl;
       
-      // Показываем кнопку ручного перехода на случай блокировок браузера
       const manualLink = document.getElementById('manual-link');
       if (manualLink) {
         manualLink.href = obsidianUri;
         manualLink.style.display = "inline";
       }
       
-      // Вытягиваем имя файла для красивого отображения на экране
       const urlParams = new URLSearchParams(currentUrl);
       let file = urlParams.get('filepath') || urlParams.get('file');
       if (file) {
@@ -33,8 +29,20 @@
         document.getElementById('status').innerText = "Открываем блок в файле: " + file;
       }
 
-      // Мгновенно запускаем приложение через Advanced URI
+      // 1. Запускаем Obsidian
       window.location.href = obsidianUri;
+
+      // 2. Таймер автозакрытия вкладки через 3 секунды
+      setTimeout(() => {
+        document.getElementById('status').innerText = "Готово! Возвращайтесь к игре в Roll20.";
+        
+        // Пытаемся закрыть вкладку
+        window.close();
+        
+        // Резервный вариант для некоторых браузеров
+        window.open('', '_self', '').close();
+      }, 3000);
+
     } else {
       document.getElementById('status').innerText = "Ошибка: В ссылке отсутствуют параметры файла.";
     }
