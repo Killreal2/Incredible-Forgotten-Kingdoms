@@ -14,7 +14,6 @@
     // 1. УКАЖИТЕ ЗДЕСЬ ИМЯ ВАШЕГО ХРАНИЛИЩА (VAULT)
     const vaultName = "Incredible Forgotten Kingdoms";
 
-    // Разбираем параметры ссылки от Advanced URI
     const urlParams = new URLSearchParams(window.location.search);
     
     let file = urlParams.get('filepath') || urlParams.get('file');
@@ -22,34 +21,37 @@
     let vault = urlParams.get('vault') || vaultName;
 
     if (file) {
-      // Очищаем .md на конце
-      file = file.replace(/\.md$/, '');
-
-      // ИСПРАВЛЕНИЕ: склеиваем файл и заголовок в один параметр 'file'
-      let targetFileParam = file;
+      // 1. Декодируем и очищаем от .md на конце
+      let decodedFile = decodeURIComponent(file).replace(/\.md$/, '');
+      
+      // 2. Склеиваем файл и заголовок через классическую решетку #
       if (heading) {
-        targetFileParam += "#" + heading; 
+        let decodedHeading = decodeURIComponent(heading);
+        decodedFile += "#" + decodedHeading;
       }
 
-      // Собираем правильный финальный URI по стандарту Obsidian
-      let obsidianUri = "obsidian://open?vault=" + encodeURIComponent(vault) + "&file=" + encodeURIComponent(targetFileParam);
+      // 3. Кодируем ВСЮ строку целиком, чтобы слэши внутри папок превратились в %2F, а решетка в %23
+      let encodedTarget = encodeURIComponent(decodedFile);
+
+      // Собираем правильный финальный URI
+      let obsidianUri = "obsidian://open?vault=" + encodeURIComponent(vault) + "&file=" + encodedTarget;
       
-      // Выводим ссылку на экран для ручного клика
       const manualLink = document.getElementById('manual-link');
       if (manualLink) {
         manualLink.href = obsidianUri;
         manualLink.style.display = "inline";
       }
       
-      document.getElementById('status').innerText = "Открываем файл: " + file + (heading ? " -> " + heading : "");
+      document.getElementById('status').innerText = "Переходим к: " + decodedFile;
 
-      // Запускаем приложение
+      // Запуск приложения
       window.location.href = obsidianUri;
     } else {
-      document.getElementById('status').innerText = "Ошибка: В ссылке не передано имя файла (?filepath=...)";
+      document.getElementById('status').innerText = "Ошибка: В ссылке не передано имя файла.";
     }
   });
 </script>
+
 
 
 
