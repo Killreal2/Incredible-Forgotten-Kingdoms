@@ -12,9 +12,9 @@
 <script>
   window.addEventListener('DOMContentLoaded', () => {
     // 1. УКАЖИТЕ ЗДЕСЬ ИМЯ ВАШЕГО ХРАНИЛИЩА (VAULT)
-    const vaultName = "Incredible Forgotten Kingdoms";
+    const vaultName = "ИМЯ_ВАШЕГО_ХРАНИЛИЩА";
 
-    // 2. Разбираем параметры ссылки от Advanced URI
+    // Разбираем параметры ссылки от Advanced URI
     const urlParams = new URLSearchParams(window.location.search);
     
     let file = urlParams.get('filepath') || urlParams.get('file');
@@ -22,32 +22,35 @@
     let vault = urlParams.get('vault') || vaultName;
 
     if (file) {
-      // Обязательно убираем расширение .md, если оно прилетело из Advanced URI
+      // Очищаем .md на конце
       file = file.replace(/\.md$/, '');
 
-      // Собираем прямую ссылку для открытия приложения
-      let obsidianUri = "obsidian://open?vault=" + encodeURIComponent(vault) + "&file=" + encodeURIComponent(file);
-      
+      // ИСПРАВЛЕНИЕ: склеиваем файл и заголовок в один параметр 'file'
+      let targetFileParam = file;
       if (heading) {
-        obsidianUri += "%23" + encodeURIComponent(heading);
+        targetFileParam += "#" + heading; 
       }
 
-      // Выводим ссылку на экран на случай блокировки браузером
+      // Собираем правильный финальный URI по стандарту Obsidian
+      let obsidianUri = "obsidian://open?vault=" + encodeURIComponent(vault) + "&file=" + encodeURIComponent(targetFileParam);
+      
+      // Выводим ссылку на экран для ручного клика
       const manualLink = document.getElementById('manual-link');
       if (manualLink) {
         manualLink.href = obsidianUri;
         manualLink.style.display = "inline";
       }
       
-      document.getElementById('status').innerText = "Открываем файл: " + file;
+      document.getElementById('status').innerText = "Открываем файл: " + file + (heading ? " -> " + heading : "");
 
-      // Моментальный вызов приложения
+      // Запускаем приложение
       window.location.href = obsidianUri;
     } else {
       document.getElementById('status').innerText = "Ошибка: В ссылке не передано имя файла (?filepath=...)";
     }
   });
 </script>
+
 
 
 
