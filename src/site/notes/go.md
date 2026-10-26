@@ -12,7 +12,7 @@
 <script>
   window.addEventListener('DOMContentLoaded', () => {
     // 1. УКАЖИТЕ ЗДЕСЬ ИМЯ ВАШЕГО ХРАНИЛИЩА (VAULT)
-    const vaultName = "ИМЯ_ВАШЕГО_ХРАНИЛИЩА";
+    const vaultName = "Incredible Forgotten Kingdoms";
 
     // Разбираем параметры ссылки от Advanced URI
     const urlParams = new URLSearchParams(window.location.search);
