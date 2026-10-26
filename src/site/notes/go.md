@@ -1,0 +1,4 @@
+---
+{"dg-publish":true,"title":"Перенаправление в Obsidian...","header":"<script>\n  window.onload = function() {\n    const urlParams = new URLSearchParams(window.location.search);\n    \n    // Читаем параметры, если вы скопировали их через Advanced URI\n    const filepath = urlParams.get('filepath') || urlParams.get('file');\n    const heading = urlParams.get('heading') || urlParams.get('hash');\n    const vaultName = urlParams.get('vault') || \"НАЗВАНИЕ_ВАШЕГО_ХРАНИЛИЩА\";\n    \n    if (filepath) {\n      // Очищаем расширение .md, если оно скопировалось\n      const cleanFile = filepath.replace(/\\.md$/, '');\n      \n      let obsidianUri = `obsidian://open?vault=${encodeURIComponent(vaultName)}&file=${encodeURIComponent(cleanFile)}`;\n      if (heading) {\n        obsidianUri += `%23${encodeURIComponent(heading)}`;\n      }\n      \n      window.location.href = obsidianUri;\n    }\n  };\n</script>\n","permalink":"/go/","dgPassFrontmatter":true}
+---
+
