@@ -41,7 +41,7 @@
         
         // Резервный вариант закрытия
         window.open('', '_self', '').close();
-      }, 400);
+      }, 300);
 
     } else {
       document.getElementById('status').innerText = "Ошибка: В ссылке отсутствуют параметры файла.";
