@@ -1,5 +1,5 @@
 ---
-{"dg-publish":true,"title":"Перенаправление в Obsidian...","dg-show-sidebar":false,"permalink":"/go/","dgPassFrontmatter":true}
+{"dg-publish":true,"dg-hide":true,"title":"Перенаправление в Obsidian...","permalink":"/go/","hide":true,"dgPassFrontmatter":true}
 ---
 
 
