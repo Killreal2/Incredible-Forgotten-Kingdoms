@@ -32,16 +32,16 @@
       // 1. Запускаем Obsidian
       window.location.href = obsidianUri;
 
-      // 2. Таймер автозакрытия вкладки через 3 секунды
+      // 2. Ускоренный таймер автозакрытия вкладки на 1800 мс (1,8 секунды)
       setTimeout(() => {
         document.getElementById('status').innerText = "Готово! Возвращайтесь к игре в Roll20.";
         
         // Пытаемся закрыть вкладку
         window.close();
         
-        // Резервный вариант для некоторых браузеров
+        // Резервный вариант закрытия
         window.open('', '_self', '').close();
-      }, 3000);
+      }, 1800);
 
     } else {
       document.getElementById('status').innerText = "Ошибка: В ссылке отсутствуют параметры файла.";
