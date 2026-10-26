@@ -11,48 +11,32 @@
 
 <script>
   window.addEventListener('DOMContentLoaded', () => {
-    // 1. УКАЖИТЕ ЗДЕСЬ ИМЯ ВАШЕГО ХРАНИЛИЩА (VAULT)
-    const vaultName = "Incredible Forgotten Kingdoms";
+    // Получаем все параметры, которые пришли из ссылки Roll20
+    const currentUrl = window.location.search;
 
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    let file = urlParams.get('filepath') || urlParams.get('file');
-    let heading = urlParams.get('heading') || urlParams.get('hash');
-    let vault = urlParams.get('vault') || vaultName;
-
-    if (file) {
-      // 1. Декодируем и очищаем от .md на конце
-      let decodedFile = decodeURIComponent(file).replace(/\.md$/, '');
+    if (currentUrl && currentUrl.includes('filepath=')) {
+      // Собираем ссылку обратно в формат Advanced URI, сохраняя ВСЕ параметры (и блоки, и заголовки)
+      let obsidianUri = "obsidian://advanced-uri" + currentUrl;
       
-      // 2. Склеиваем файл и заголовок через классическую решетку #
-      if (heading) {
-        let decodedHeading = decodeURIComponent(heading);
-        decodedFile += "#" + decodedHeading;
-      }
-
-      // 3. Кодируем ВСЮ строку целиком, чтобы слэши внутри папок превратились в %2F, а решетка в %23
-      let encodedTarget = encodeURIComponent(decodedFile);
-
-      // Собираем правильный финальный URI
-      let obsidianUri = "obsidian://open?vault=" + encodeURIComponent(vault) + "&file=" + encodedTarget;
-      
+      // Показываем кнопку ручного перехода на случай блокировок браузера
       const manualLink = document.getElementById('manual-link');
       if (manualLink) {
         manualLink.href = obsidianUri;
         manualLink.style.display = "inline";
       }
       
-      document.getElementById('status').innerText = "Переходим к: " + decodedFile;
+      // Вытягиваем имя файла для красивого отображения на экране
+      const urlParams = new URLSearchParams(currentUrl);
+      let file = urlParams.get('filepath') || urlParams.get('file');
+      if (file) {
+        file = decodeURIComponent(file).split('/').pop().replace(/\.md$/, '');
+        document.getElementById('status').innerText = "Открываем блок в файле: " + file;
+      }
 
-      // Запуск приложения
+      // Мгновенно запускаем приложение через Advanced URI
       window.location.href = obsidianUri;
     } else {
-      document.getElementById('status').innerText = "Ошибка: В ссылке не передано имя файла.";
+      document.getElementById('status').innerText = "Ошибка: В ссылке отсутствуют параметры файла.";
     }
   });
 </script>
-
-
-
-
-
